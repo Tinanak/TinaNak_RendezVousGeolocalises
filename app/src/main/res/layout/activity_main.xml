@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/rdv_geo"
+        android:layout_gravity="center"
+        android:textSize="24sp"
+        android:layout_centerHorizontal="true"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/editTextPhoneNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/entrez_numero_tel"
+            android:inputType="phone"
+            android:layout_marginTop="16dp"
+            android:layout_marginHorizontal="16dp"/>
+
+        <Button
+            android:id="@+id/buttonSelectContacts"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/selectionner_des_contacts"
+            android:layout_gravity="center" />
+
+        <EditText
+            android:id="@+id/editTextMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/entrez_msg"
+            android:inputType="textLongMessage"
+            android:layout_marginHorizontal="16dp"/>
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonSendInvite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/envoyer_invitation"
+        android:layout_below="@id/buttonSelectContacts"
+        android:layout_marginTop="16dp"
+        android:layout_gravity="center"
+        android:onClick="sendInvite"
+        android:layout_centerHorizontal="true"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:context=".MainActivity"
+        android:layout_marginTop="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/liste_adresses"
+            android:textSize="20sp"
+            android:layout_gravity="center"/>
+
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/list_location"/>
+    </LinearLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

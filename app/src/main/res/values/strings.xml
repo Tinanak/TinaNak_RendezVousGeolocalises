@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">TinaNak_RendezVousGeolocalises</string>
+    <string name="selectionner_des_contacts">Sélectionner des contacts</string>
+    <string name="envoyer_invitation">Envoyer l\'invitation</string>
+    <string name="entrez_numero_tel">Entrez le numéro de téléphone</string>
+    <string name="entrez_msg">Entrez le message</string>
+    <string name="rdv_geo">Rendez-vous géolocalisés</string>
+    <string name="liste_adresses">Liste des adresses</string>
+</resources>
