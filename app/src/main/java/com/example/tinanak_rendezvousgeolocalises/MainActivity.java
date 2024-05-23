@@ -5,8 +5,9 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.location.Address;
-import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -20,14 +21,18 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private static final int CONTACT_PICK_REQUEST = 1;
-
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 2;
+    private static final int SMS_PERMISSION_REQUEST_CODE = 3;
     private EditText editTextPhoneNumber, editTextMessage;
+    private LocationManager locationManager;
+    private Location currentLocation;
+    private ArrayList<String> listLocations = new ArrayList<>();
+    private CustomAdapter customAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,153 +46,123 @@ public class MainActivity extends AppCompatActivity {
         Button buttonSendInvite = findViewById(R.id.buttonSendInvite);
 
         // Button click listeners
-        buttonSelectContacts.setOnClickListener(v -> selectContacts());
-        buttonSendInvite.setOnClickListener(v -> onRequestPermissionsResult(
-                0,
-                new String[]{Manifest.permission.SEND_SMS},
-                new int[]{PackageManager.PERMISSION_GRANTED}));
+        buttonSelectContacts.setOnClickListener(this::selectContacts);
+        buttonSendInvite.setOnClickListener(v -> sendInvite());
 
-        // Display list of locations
+        // Initialize locations list and adapter
+        customAdapter = new CustomAdapter(this, listLocations.toArray(new String[0]));
         ListView listView = findViewById(R.id.list_location);
-        Geocoder geocoder = new Geocoder(this, Locale.FRANCE);
-        try {
-            String location_name = "Decathlon, Bordeaux";
-            List<Address> listAddr = geocoder.getFromLocationName(location_name, 10);
-            assert listAddr != null;
-            String[] dataToDisplay = new String[listAddr.size()];
-            for (int i = 0; i < listAddr.size(); i++) {
-                dataToDisplay[i] = listAddr.get(i).getAddressLine(0);
-            }
-            listView.setAdapter(new CustomAdapter(this, dataToDisplay));
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+        listView.setAdapter(customAdapter);
+
+        // Initialize location manager
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        // Request location permission if not granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE);
+        } else {
+            getLocation();
         }
     }
 
-    /**
-     * Envoyer une invitation à un contact sélectionné
-     */
-    private void selectContacts() {
+    private void selectContacts(View view) {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
         startActivityForResult(intent, CONTACT_PICK_REQUEST);
     }
 
+    @SuppressLint("MissingPermission")
+    private void getLocation() {
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
+            @Override
+            public void onLocationChanged(@NonNull Location location) {
+                currentLocation = location;
+            }
+        });
+    }
 
-    /**
-     * Envoyer une invitation à un contact sélectionné
-     *
-     * @param requestCode       Un code d'entier qui identifie la demande de résultat
-     * @param resultCode        Un code d'entier qui identifie le résultat de l'activité
-     * @param data              Un objet Intent qui contient le résultat de l'activité
-     *
-     */
-    @SuppressLint("Range")
+    private void sendInvite() {
+        String phoneNumber = editTextPhoneNumber.getText().toString().trim();
+        String message = editTextMessage.getText().toString().trim();
+
+        if (currentLocation != null) {
+            String locationMessage = "Location: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
+            message += "\n" + locationMessage;
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.SEND_SMS},
+                    SMS_PERMISSION_REQUEST_CODE);
+        } else {
+            sendSMS(phoneNumber, message);
+        }
+    }
+
+    private void sendSMS(String phoneNumber, String message) {
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(phoneNumber, null, message, null, null);
+        Toast.makeText(this, "Invitation envoyée avec succès", Toast.LENGTH_LONG).show();
+    }
+
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CONTACT_PICK_REQUEST && resultCode == RESULT_OK) {
             Uri contactUri = data.getData();
-            assert contactUri != null;
-            Cursor cursor = getContentResolver().query(contactUri, null, null, null, null);
+            String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+
+            Cursor cursor = getContentResolver().query(contactUri, projection, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
-                @SuppressLint("Range") String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                @SuppressLint("Range") String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                if (Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
-                    Cursor phoneCursor = getContentResolver().query(
-                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            null,
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                            new String[]{contactId},
-                            null
-                    );
-                    // Remplir le champ de numéro de téléphone avec le numéro de téléphone du contact sélectionné,
-                    // si la sélection est plus d'un contact, alors on doit ajouter un , entre les numéros, et les afficher dans le champ
-                    // les messages seront envoyés à tous les numéros
-                    if (phoneCursor != null && phoneCursor.moveToFirst()) {
-                        String phoneNumber = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        editTextPhoneNumber.append(phoneNumber);
-                        Toast.makeText(this, "Contact sélectionné : " + contactName + ", Numéro : " + phoneNumber, Toast.LENGTH_SHORT).show();
-                    }
+                int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                String number = cursor.getString(numberIndex);
 
-                    if (phoneCursor != null) {
-                        phoneCursor.close();
-                    }
+                // Ajouter le numéro de téléphone sélectionné à la liste
+                if (editTextPhoneNumber.getText().toString().isEmpty()) {
+                    editTextPhoneNumber.setText(number);
+                } else if (editTextPhoneNumber.getText().toString().contains(number)) {
+                    Toast.makeText(this, "Le numéro est déjà sélectionné", Toast.LENGTH_LONG).show();
+                } else {
+                    editTextPhoneNumber.setText(editTextPhoneNumber.getText() + ";" + number);
                 }
-            }
-
-            //
-            if (cursor != null) {
                 cursor.close();
             }
         }
     }
 
-    /**
-     * Envoyer un SMS à un numéro de téléphone avec un message
-     *
-     * @param numero Numéro de téléphone
-     *  @param message Message à envoyer
-     */
-    private void sendSMS(String numero, String message) {
-        try {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                // Demande de permission pour envoyer des SMS si elle n'est pas accordée
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.SEND_SMS)) {
-                    Toast.makeText(this, "Permission de SMS refusée", Toast.LENGTH_LONG).show();
-                } else {
-                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, 0);
-                    Toast.makeText(this, "Veuillez accorder la permission pour envoyer des SMS", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                SmsManager.getDefault().sendTextMessage(numero, null, message, null, null);
-                Toast.makeText(this, "Invitation envoyée avec succès", Toast.LENGTH_LONG).show();
-                editTextMessage.setText("");
-                editTextPhoneNumber.setText("");
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "Erreur lors de l'envoi de l'invitation", Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Envoyer une invitation à un contact sélectionné
-     *
-     * @param requestCode       Un code d'entier qui identifie la demande de résultat
-     * @param permissions       Les autorisations demandées par l'application
-     * @param grantResults      Les résultats des autorisations demandées
-     *
-     */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case 0: // Permission pour envoyer des SMS
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission accordée, envoyer le SMS
-                    String phoneNumber = editTextPhoneNumber.getText().toString().trim();
-                    String message = editTextMessage.getText().toString().trim();
-                    if (!phoneNumber.isEmpty() && !message.isEmpty()) {
-                        sendSMS(phoneNumber, message);
-                    } else {
-                        Toast.makeText(this, "Veuillez saisir tous les champs", Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    // Permission refusée
-                    Toast.makeText(this, "Permission de SMS refusée", Toast.LENGTH_LONG).show();
-                }
-                break;
-            case CONTACT_PICK_REQUEST: // Permission pour sélectionner des contacts
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    selectContacts();
-                } else {
-                    Toast.makeText(this, "Permission de lecture des contacts refusée", Toast.LENGTH_LONG).show();
-                }
-                break;
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                getLocation();
+            } else {
+                Toast.makeText(this, "Permission de localisation refusée", Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == SMS_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                sendInvite();
+            } else {
+                Toast.makeText(this, "Permission d'envoi de SMS refusée", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    public void addLocationAction(View view) {
+        if (currentLocation != null) {
+            String locationMessage = "Location: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
+            listLocations.add(locationMessage);
+            customAdapter.notifyDataSetChanged();
+        } else {
+            Toast.makeText(this, "Impossible d'obtenir la localisation actuelle", Toast.LENGTH_LONG).show();
         }
     }
 }
+
 
 

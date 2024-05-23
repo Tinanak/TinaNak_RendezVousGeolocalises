@@ -18,7 +18,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="15dp">
 
         <EditText
             android:id="@+id/editTextPhoneNumber"
@@ -27,54 +28,162 @@
             android:hint="@string/entrez_numero_tel"
             android:inputType="phone"
             android:layout_marginTop="16dp"
+            android:layout_weight="1"
             android:layout_marginHorizontal="16dp"/>
 
         <Button
             android:id="@+id/buttonSelectContacts"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/selectionner_des_contacts"
+            android:layout_weight="0"
+            android:text="@string/add"
             android:layout_gravity="center" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:context=".MainActivity"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="15dp">
+
+        <EditText
+            android:id="@+id/editTextLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/enter_location"
+            android:layout_marginVertical="8dp"/>
+
+        <Button
+            android:id="@+id/location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="addLocationAction"
+            android:layout_weight="0"
+            android:text="@string/add" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/liste_des_lieux"
+            android:textAllCaps="true"/>
+
+        <ListView
+            android:id="@+id/list_location"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/date_et_heure"
+            android:textAllCaps="true"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textAlignment="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@+id/date_picker"
+                    android:text="@string/date"
+                    android:layout_marginEnd="10dp"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/darker_gray" />
+
+                <Button
+                    android:id="@+id/date_picker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="showDatePickerDialog"
+                    android:text="--"
+                    tools:ignore="ButtonStyle" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:labelFor="@+id/time_picker"
+                    android:text="@string/heure"
+                    android:layout_marginEnd="10dp"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/darker_gray" />
+
+                <Button
+                    android:id="@+id/time_picker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="showTimePickerDialog"
+                    android:text="--"
+                    tools:ignore="ButtonStyle" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp">
 
         <EditText
             android:id="@+id/editTextMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/entrez_msg"
+            android:layout_weight="1"
             android:inputType="textLongMessage"
             android:layout_marginHorizontal="16dp"/>
 
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/buttonSendInvite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/envoyer_invitation"
-        android:layout_below="@id/buttonSelectContacts"
-        android:layout_marginTop="16dp"
-        android:layout_gravity="center"
-        android:onClick="sendInvite"
-        android:layout_centerHorizontal="true"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context=".MainActivity"
-        android:layout_marginTop="20dp">
-
-        <TextView
+        <Button
+            android:id="@+id/buttonSendInvite"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/liste_adresses"
-            android:textSize="20sp"
-            android:layout_gravity="center"/>
+            android:text="@string/envoyer_invitation"
+            android:layout_below="@id/buttonSelectContacts"
+            android:layout_gravity="center"
+            android:onClick="sendInvite"
+            android:layout_centerHorizontal="true"/>
 
-        <ListView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/list_location"/>
     </LinearLayout>
 
 </androidx.appcompat.widget.LinearLayoutCompat>
