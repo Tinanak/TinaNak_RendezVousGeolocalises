@@ -12,7 +12,9 @@
         android:layout_height="wrap_content"
         android:text="@string/rdv_geo"
         android:layout_gravity="center"
+        android:layout_marginTop="10dp"
         android:textSize="24sp"
+        android:textAllCaps="true"
         android:layout_centerHorizontal="true"/>
 
     <LinearLayout
@@ -33,8 +35,8 @@
 
         <Button
             android:id="@+id/buttonSelectContacts"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
             android:layout_weight="0"
             android:text="@string/add"
             android:layout_gravity="center" />
@@ -46,7 +48,6 @@
         android:layout_height="wrap_content"
         tools:context=".MainActivity"
         android:layout_marginStart="15dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="15dp">
 
         <EditText
@@ -59,9 +60,8 @@
 
         <Button
             android:id="@+id/location"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="addLocationAction"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
             android:layout_weight="0"
             android:text="@string/add" />
     </LinearLayout>
@@ -71,19 +71,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/liste_des_lieux"
-            android:textAllCaps="true"/>
 
         <ListView
             android:id="@+id/list_location"
             android:layout_width="match_parent"
-            android:layout_height="100dp"/>
+            android:layout_height="50dp"/>
 
     </LinearLayout>
 
@@ -99,6 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/date_et_heure"
+            android:gravity="center"
             android:textAllCaps="true"/>
 
         <LinearLayout
@@ -119,13 +113,12 @@
                     android:labelFor="@+id/date_picker"
                     android:text="@string/date"
                     android:layout_marginEnd="10dp"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textAllCaps="true"/>
 
                 <Button
                     android:id="@+id/date_picker"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="60dp"
+                    android:layout_height="40dp"
                     android:onClick="showDatePickerDialog"
                     android:text="--"
                     tools:ignore="ButtonStyle" />
@@ -143,13 +136,12 @@
                     android:labelFor="@+id/time_picker"
                     android:text="@string/heure"
                     android:layout_marginEnd="10dp"
-                    android:textAllCaps="true"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textAllCaps="true"/>
 
                 <Button
                     android:id="@+id/time_picker"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="60dp"
+                    android:layout_height="40dp"
                     android:onClick="showTimePickerDialog"
                     android:text="--"
                     tools:ignore="ButtonStyle" />
@@ -179,10 +171,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/envoyer_invitation"
-            android:layout_below="@id/buttonSelectContacts"
             android:layout_gravity="center"
-            android:onClick="sendInvite"
-            android:layout_centerHorizontal="true"/>
+            android:onClick="sendInvite"/>
 
     </LinearLayout>
 

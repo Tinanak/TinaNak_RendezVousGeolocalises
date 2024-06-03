@@ -22,18 +22,25 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int CONTACT_PICK_REQUEST = 1;
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 2;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 0;
+    private static final int PICK_CONTACT_REQUEST = 1;
+    private static final int PICK_LOCATION_REQUEST = 2;
     private static final int SMS_PERMISSION_REQUEST_CODE = 3;
-    private EditText editTextPhoneNumber, editTextMessage;
+    private EditText editTextPhoneNumber, editTextMessage, editTextLocation;
     private LocationManager locationManager;
     private Location currentLocation;
     private ArrayList<String> listLocations = new ArrayList<>();
     private CustomAdapter customAdapter;
 
+    // coordonnées GPS du RDV
+    private LatLng latLng;
+
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,12 +49,15 @@ public class MainActivity extends AppCompatActivity {
         // Initialize views
         editTextPhoneNumber = findViewById(R.id.editTextPhoneNumber);
         editTextMessage = findViewById(R.id.editTextMessage);
+        editTextLocation = findViewById(R.id.editTextLocation);
         Button buttonSelectContacts = findViewById(R.id.buttonSelectContacts);
+        Button buttonAddLocation = findViewById(R.id.location);
         Button buttonSendInvite = findViewById(R.id.buttonSendInvite);
 
         // Button click listeners
         buttonSelectContacts.setOnClickListener(this::selectContacts);
-        buttonSendInvite.setOnClickListener(v -> sendInvite());
+        buttonAddLocation.setOnClickListener(this::addLocation);
+        buttonSendInvite.setOnClickListener(this::sendInvite);
 
         // Initialize locations list and adapter
         customAdapter = new CustomAdapter(this, listLocations.toArray(new String[0]));
@@ -57,12 +67,12 @@ public class MainActivity extends AppCompatActivity {
         // Initialize location manager
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
-        // Request location permission if not granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST_CODE);
+        // Vérifier si les services de localisation sont activés
+        checkLocationEnabled();
+
+        // Demander la permission de localisation
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
         } else {
             getLocation();
         }
@@ -71,26 +81,38 @@ public class MainActivity extends AppCompatActivity {
     private void selectContacts(View view) {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
-        startActivityForResult(intent, CONTACT_PICK_REQUEST);
+        startActivityForResult(intent, PICK_CONTACT_REQUEST);
     }
 
     @SuppressLint("MissingPermission")
-    private void getLocation() {
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
-            @Override
-            public void onLocationChanged(@NonNull Location location) {
-                currentLocation = location;
-            }
-        });
+    private void addLocation(View view) {
+
+        String uri = "geo:" + currentLocation.getLatitude() + "," + currentLocation.getLongitude();
+        Uri geoUri = Uri.parse(uri);
+
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, geoUri);
+
+        if (mapIntent.resolveActivity(getPackageManager()) != null) {
+            listLocations.add(geoUri.toString());
+            customAdapter.notifyDataSetChanged();
+            startActivityForResult(mapIntent, PICK_LOCATION_REQUEST);
+        } else {
+            Toast.makeText(this, "Localisation non disponible", Toast.LENGTH_LONG).show();
+        }
     }
 
-    private void sendInvite() {
+    private void sendInvite(View view) {
         String phoneNumber = editTextPhoneNumber.getText().toString().trim();
         String message = editTextMessage.getText().toString().trim();
 
         if (currentLocation != null) {
             String locationMessage = "Location: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
             message += "\n" + locationMessage;
+        }
+
+        if (phoneNumber.isEmpty() || message.isEmpty()) {
+            Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_LONG).show();
+            return;
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
@@ -107,16 +129,45 @@ public class MainActivity extends AppCompatActivity {
         SmsManager smsManager = SmsManager.getDefault();
         smsManager.sendTextMessage(phoneNumber, null, message, null, null);
         Toast.makeText(this, "Invitation envoyée avec succès", Toast.LENGTH_LONG).show();
+        editTextMessage.setText("");
+        editTextPhoneNumber.setText("");
+        editTextLocation.setText("");
+    }
+
+    @SuppressLint("MissingPermission")
+    private void getLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, new LocationListener() {
+                @Override
+                public void onLocationChanged(@NonNull Location location) {
+                    currentLocation = location;
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {}
+
+                @Override
+                public void onProviderDisabled(@NonNull String provider) {}
+            });
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+        }
     }
 
     @SuppressLint("SetTextI18n")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CONTACT_PICK_REQUEST && resultCode == RESULT_OK) {
+
+        // Selction de contact
+        if (requestCode == PICK_CONTACT_REQUEST && resultCode == RESULT_OK) {
             Uri contactUri = data.getData();
             String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
 
+            assert contactUri != null;
             Cursor cursor = getContentResolver().query(contactUri, projection, null, null, null);
             if (cursor != null && cursor.moveToFirst()) {
                 int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
@@ -133,6 +184,28 @@ public class MainActivity extends AppCompatActivity {
                 cursor.close();
             }
         }
+
+        // Selection une location sur la carte et l'ajouter à la liste, faire comme pour les contacts
+        if (requestCode == PICK_LOCATION_REQUEST && resultCode == RESULT_OK) {
+            this.latLng = new LatLng(
+                    data.getDoubleExtra("latitude", 0.0),
+                    data.getDoubleExtra("longitude", 0.0)
+            );
+
+            Uri locationUri = Uri.parse("geo:" + latLng.latitude + "," + latLng.longitude);
+
+            assert locationUri != null;
+            Cursor cursor = getContentResolver().query(locationUri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int locationIndex = cursor.getColumnIndex("location");
+                String location = cursor.getString(locationIndex);
+
+                // Ajouter la location sélectionnée à la liste
+                listLocations.add(location);
+                customAdapter.notifyDataSetChanged();
+                cursor.close();
+            }
+        }
     }
 
     @Override
@@ -146,23 +219,23 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (requestCode == SMS_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                sendInvite();
+                sendInvite(null);
             } else {
-                Toast.makeText(this, "Permission d'envoi de SMS refusée", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Permission SMS refusée", Toast.LENGTH_LONG).show();
             }
         }
     }
 
-    public void addLocationAction(View view) {
-        if (currentLocation != null) {
-            String locationMessage = "Location: " + currentLocation.getLatitude() + ", " + currentLocation.getLongitude();
-            listLocations.add(locationMessage);
-            customAdapter.notifyDataSetChanged();
+    private void checkLocationEnabled() {
+        boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+        if (!gpsEnabled && !networkEnabled) {
+            Toast.makeText(this, "Veuillez activer les services de localisation", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
         } else {
-            Toast.makeText(this, "Impossible d'obtenir la localisation actuelle", Toast.LENGTH_LONG).show();
+            getLocation();
         }
     }
+
 }
-
-
-
