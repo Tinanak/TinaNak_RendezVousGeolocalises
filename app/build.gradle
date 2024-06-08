@@ -26,6 +26,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    viewBinding {
+        enabled = true
+    }
 }
 
 dependencies {
@@ -41,6 +44,10 @@ dependencies {
     // Google Maps
     implementation libs.play.services.maps
     implementation libs.play.services.location
+    implementation libs.fragment
+
+    implementation libs.osmdroid.android
+
 
 
 }
