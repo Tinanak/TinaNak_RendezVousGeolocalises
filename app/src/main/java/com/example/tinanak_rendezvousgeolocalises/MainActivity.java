@@ -27,6 +27,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.DialogFragment;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -45,12 +46,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PICK_LOCATION_REQUEST = 2;
     private static final int SMS_PERMISSION_REQUEST_CODE = 3;
     private EditText editTextPhoneNumber, editTextMessage, editTextLocation;
+    private TextView textViewDetailLocation;
     private LocationManager locationManager;
     private Geocoder geocoder;
     private final ArrayList<String> listLocations = new ArrayList<>();
     private CustomAdapter customAdapter;
     private GoogleMap mMap;
     LatLng currentLatLng;
+    private ListView listViewLocations;
+    Button date, time;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -62,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         editTextPhoneNumber = findViewById(R.id.editTextPhoneNumber);
         editTextMessage = findViewById(R.id.editTextMessage);
         editTextLocation = findViewById(R.id.editTextLocation);
+        textViewDetailLocation = findViewById(R.id.detailLocation);
         Button buttonSelectContacts = findViewById(R.id.buttonSelectContacts);
         Button buttonAddLocation = findViewById(R.id.location);
         Button buttonSendInvite = findViewById(R.id.buttonSendInvite);
@@ -71,10 +76,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         buttonAddLocation.setOnClickListener(this::addLocation);
         buttonSendInvite.setOnClickListener(this::sendInvite);
 
+        // Date est time
+        date = findViewById(R.id.date_picker);
+        time = findViewById(R.id.time_picker);
+
         // Initialize locations list and adapter
         customAdapter = new CustomAdapter(this, listLocations.toArray(new String[0]));
-        ListView listView = findViewById(R.id.list_location);
-        listView.setAdapter(customAdapter);
+        listViewLocations = findViewById(R.id.list_location);
+        listViewLocations.setAdapter(customAdapter);
 
         // Initialize location manager et geocoder
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -174,46 +183,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Toast.makeText(this, "Erreur lors de la récupération de la localisation", Toast.LENGTH_LONG).show();
         }
     }
-    /*private void addLocation(View view) throws IOException {
 
-        // Obtenir la localisation en France
-        geocoder = new Geocoder(this, Locale.FRANCE);
+    /**
+     * Action liée à l'ouverture du time picker
+     *
+     * @param view button du time picker
+     */
+    public void showTimePickerDialog(View view) {
+        DialogFragment newFragment = new PickerActivityFragment.TimePickerFragment();
+        newFragment.show(getSupportFragmentManager(), "timePicker");
+    }
 
-        // Ouvrir la carte pour sélectionner une location
-        String uri = "geo:" + geocoder;
-        Uri geoUri = Uri.parse(uri);
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW, geoUri);
-
-        // Vérifier si l'application de localisation est disponible
-        if (mapIntent.resolveActivity(getPackageManager()) != null) {
-            listLocations.add(geoUri.toString());
-            customAdapter.notifyDataSetChanged();
-            startActivityForResult(mapIntent, PICK_LOCATION_REQUEST);
-        } else {
-            Toast.makeText(this, "Localisation non disponible", Toast.LENGTH_LONG).show();
-        }
-
-        try {
-            String location_name = ((EditText) findViewById(R.id.editTextLocation)).getText().toString();
-            List<Address> listAddr = geocoder.getFromLocationName(location_name, 10);
-            assert listAddr != null;
-            String[] dataToDisplay = new String[listAddr.size()];
-            for (int i = 0; i < listAddr.size(); i++) {
-                dataToDisplay[i] = listAddr.get(i).getAddressLine(0);
-            }
-
-            ListView listView = findViewById(R.id.list_location); // Assurez-vous que l'ID du ListView est correct
-            listView.setAdapter(new CustomAdapter(this, dataToDisplay));
-            listView.setOnItemClickListener((parent, view1, position, id) -> {
-                Address address = listAddr.get(position);
-                TextView textView = findViewById(R.id.detailLocation); // Assurez-vous que l'ID du TextView est correct
-                textView.setText(address.toString());
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Erreur lors de la récupération de la localisation", Toast.LENGTH_LONG).show();
-        }
-    }*/
+    /**
+     * Action liée à l'ouverture du date picker
+     *
+     * @param view button du date picker
+     */
+    public void showDatePickerDialog(View view) {
+        DialogFragment newFragment = new PickerActivityFragment.DatePickerFragment();
+        newFragment.show(getSupportFragmentManager(), "datePicker");
+    }
 
     /**
      * Envoyer une invitation
@@ -223,35 +212,61 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void sendInvite(View view) {
         String phoneNumber = editTextPhoneNumber.getText().toString().trim();
         String message = editTextMessage.getText().toString().trim();
+        String address = listLocations.get(listLocations.size() - 1);
 
-        if (phoneNumber.isEmpty() || message.isEmpty()) {
-            Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_LONG).show();
+        // Date est time
+        date = findViewById(R.id.date_picker);
+        time = findViewById(R.id.time_picker);
+
+        String context = "Le rendez-vous au " + address + " le " + date + " à " + time;
+
+        if (phoneNumber.isEmpty()) {
+            Toast.makeText(this, "Veuillez remplir le champ du numéro de téléphone", Toast.LENGTH_LONG).show();
+            return;
+        } else if (message.isEmpty()) {
+            Toast.makeText(this, "Veuillez remplir le champ du message", Toast.LENGTH_LONG).show();
+            return;
+        } else if (listLocations.isEmpty() && currentLatLng == null) {
+            Toast.makeText(this, "Veuillez sélectionner une localisation", Toast.LENGTH_LONG).show();
             return;
         }
 
         if (!listLocations.isEmpty()) {
-            message += "\nLocalisation: " + listLocations.get(listLocations.size() - 1);
+            message += context;
         } else if (geocoder != null) {
             String locationMessage = "Localisation: " + currentLatLng.latitude + ", " + currentLatLng.longitude;
-            message += "\n" + locationMessage;
+            context = "Le rendez-vous au " + locationMessage + " le " + date + " à " + time;
+            message += "\n" + context;
         } else {
             Toast.makeText(this, "Aucune localisation disponible", Toast.LENGTH_LONG).show();
             return;
         }
+
+        // Start ValidationRDV to simulate receiving the invitation
+       Intent intent = new Intent(this, ValidationRDV.class);
+        intent.putExtra("latitude", currentLatLng.latitude);
+        intent.putExtra("longitude", currentLatLng.longitude);
+        intent.putExtra("date", "Date et heure du rendez-vous"); // Add your date and time here
+        startActivity(intent);
+
         String finalMessage = message;
         requestPermission(() -> sendSMS(phoneNumber, finalMessage));
     }
 
     /**
-     * Envoyer un SMS
+     * Envoyer un SMS à un numéro ou plusieurs numéros
      *
      * @param phoneNumber Le numéro de téléphone
      * @param message Le message
      */
     private void sendSMS(String phoneNumber, String message) {
+
         SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-        Toast.makeText(this, "Invitation envoyée avec succès", Toast.LENGTH_LONG).show();
+        String[] numbers = phoneNumber.split(";");
+        for (String number : numbers) {
+            smsManager.sendTextMessage(number, null, message, null, null);
+        }
+        Toast.makeText(this, "Invitation envoyée", Toast.LENGTH_LONG).show();
         clearFields();
     }
 
@@ -262,6 +277,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         editTextMessage.setText("");
         editTextPhoneNumber.setText("");
         editTextLocation.setText("");
+        listLocations.clear();
+        listViewLocations.clearChoices();
+        textViewDetailLocation.setText("");
     }
 
     /**
@@ -317,27 +335,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         // Selection une location sur la carte et l'ajouter à la liste
-        /*if (requestCode == PICK_LOCATION_REQUEST && resultCode == RESULT_OK) {
-            this.currentLatLng = new LatLng(
-                    data.getDoubleExtra("latitude", 0.0),
-                    data.getDoubleExtra("longitude", 0.0)
-            );
-
-            Uri locationUri = Uri.parse("geo:" + currentLatLng.latitude + "," + currentLatLng.longitude);
-            String[] projection = {"location"};
-
-            assert locationUri != null;
-            Cursor cursor = getContentResolver().query(locationUri, projection, null, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
-                int locationIndex = cursor.getColumnIndex("location");
-                String location = cursor.getString(locationIndex);
-
-                // Ajouter la location sélectionnée à la liste
-                listLocations.add(location);
-                customAdapter.notifyDataSetChanged();
-                cursor.close();
-            }
-        }*/
         if (requestCode == PICK_LOCATION_REQUEST && resultCode == RESULT_OK) {
             LatLng selectedLocation = new LatLng(
                     data.getDoubleExtra("latitude", 0.0),
@@ -385,7 +382,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (requestCode == SMS_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                sendInvite(null);
+                sendInvite(new View(this));
             } else {
                 Toast.makeText(this, "Permission d'envoi de SMS refusée", Toast.LENGTH_LONG).show();
             }

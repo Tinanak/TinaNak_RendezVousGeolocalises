@@ -13,4 +13,8 @@
     <string name="date_et_heure">Date et heure de rendez-vous</string>
     <string name="date">date :</string>
     <string name="heure">heure :</string>
+
+    <string name="refuser">Refuser</string>
+    <string name="accepter">Accepter</string>
+    <string name="date_heure_rdv">Date et heure du rendez-vous</string>
 </resources>
