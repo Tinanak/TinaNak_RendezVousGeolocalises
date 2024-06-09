@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.telephony.SmsManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -216,25 +217,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      *
      * @param view      La vue actuelle
      */
+
     private void sendInvite(View view) {
+        Log.d("sendInvite", "sendInvite called");
+
         String phoneNumber = editTextPhoneNumber.getText().toString().trim();
         String message = editTextMessage.getText().toString().trim();
 
         // Vérifier si les champs sont vides
         if (phoneNumber.isEmpty()) {
             showToast("Veuillez remplir le champ du numéro de téléphone");
+            Log.d("sendInvite", "phoneNumber is empty");
             return;
         }
 
         // Vérifier si les champs sont vides
         if (message.isEmpty()) {
             showToast("Veuillez remplir le champ du message");
+            Log.d("sendInvite", "message is empty");
             return;
         }
 
         // Vérifier si la date et l'heure sont sélectionnées
         if (date.getText().equals("Date") || time.getText().equals("Time")) {
             showToast("Veuillez sélectionner une date et une heure");
+            Log.d("sendInvite", "date or time not selected");
             return;
         }
 
@@ -251,6 +258,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             context.append(locationMessage);
         } else {
             showToast("Aucune localisation disponible");
+            Log.d("sendInvite", "no location available");
             return;
         }
 
@@ -260,7 +268,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // Vérifier si l'application a la permission d'envoyer des SMS
         String finalMessage = message;
-        requestPermission(() -> sendSMS(this, phoneNumber, finalMessage));
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, SMS_PERMISSION_REQUEST_CODE);
+        } else {
+            sendSMS(this, phoneNumber, finalMessage);
+        }
     }
 
     /**
@@ -407,6 +419,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == SMS_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                sendInvite(new View(this));
+            } else {
+                Toast.makeText(this, "Permission d'envoi de SMS refusée", Toast.LENGTH_LONG).show();
+            }
+        }
+
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 getLocation();
