@@ -6,6 +6,7 @@
         android:name="android.hardware.telephony"
         android:required="false" />
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -34,6 +35,7 @@
             android:label="Validation Rendez-vous"
             android:theme="@style/Theme.TinaNak_RendezVousGeolocalises">
         </activity>
+        <activity android:name=".ListSmsRDV" />
     </application>
 
 </manifest>

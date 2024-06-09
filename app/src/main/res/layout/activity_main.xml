@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -86,23 +87,31 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/list_item_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/liste_des_lieux"
+            android:gravity="center"
+            android:textAllCaps="true"/>
+
         <ListView
             android:id="@+id/list_location"
             android:layout_width="match_parent"
-            android:layout_height="50dp"/>
+            android:layout_height="60dp"/>
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/detailLocationLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:orientation="vertical">
 
@@ -200,5 +209,13 @@
             android:onClick="sendInvite"/>
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonOpenSMSList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/liste_des_sms"
+        android:layout_gravity="center"
+        android:onClick="openSMSList"/>
 
 </androidx.appcompat.widget.LinearLayoutCompat>

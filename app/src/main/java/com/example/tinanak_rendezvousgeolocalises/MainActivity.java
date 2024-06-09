@@ -1,8 +1,12 @@
 package com.example.tinanak_rendezvousgeolocalises;
 
+import static com.example.tinanak_rendezvousgeolocalises.ListSmsRDV.smsResponses;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Address;
@@ -37,6 +41,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -45,18 +50,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PICK_CONTACT_REQUEST = 1;
     private static final int PICK_LOCATION_REQUEST = 2;
     private static final int SMS_PERMISSION_REQUEST_CODE = 3;
-    private EditText editTextPhoneNumber, editTextMessage, editTextLocation;
-    private TextView textViewDetailLocation;
+    private static EditText editTextPhoneNumber;
+    private static EditText editTextMessage;
+    private static EditText editTextLocation;
+    private static TextView textViewDetailLocation;
     private LocationManager locationManager;
     private Geocoder geocoder;
-    private final ArrayList<String> listLocations = new ArrayList<>();
-    private CustomAdapter customAdapter;
+    private static final ArrayList<String> listLocations = new ArrayList<>();
+    private static CustomAdapter customAdapter;
     private GoogleMap mMap;
     LatLng currentLatLng;
-    private ListView listViewLocations;
+    private static ListView listViewLocations;
     Button date, time;
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "CutPasteId"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -212,45 +219,57 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void sendInvite(View view) {
         String phoneNumber = editTextPhoneNumber.getText().toString().trim();
         String message = editTextMessage.getText().toString().trim();
-        String address = listLocations.get(listLocations.size() - 1);
 
-        // Date est time
-        date = findViewById(R.id.date_picker);
-        time = findViewById(R.id.time_picker);
-
-        String context = "Le rendez-vous au " + address + " le " + date + " à " + time;
-
+        // Vérifier si les champs sont vides
         if (phoneNumber.isEmpty()) {
-            Toast.makeText(this, "Veuillez remplir le champ du numéro de téléphone", Toast.LENGTH_LONG).show();
-            return;
-        } else if (message.isEmpty()) {
-            Toast.makeText(this, "Veuillez remplir le champ du message", Toast.LENGTH_LONG).show();
-            return;
-        } else if (listLocations.isEmpty() && currentLatLng == null) {
-            Toast.makeText(this, "Veuillez sélectionner une localisation", Toast.LENGTH_LONG).show();
+            showToast("Veuillez remplir le champ du numéro de téléphone");
             return;
         }
 
+        // Vérifier si les champs sont vides
+        if (message.isEmpty()) {
+            showToast("Veuillez remplir le champ du message");
+            return;
+        }
+
+        // Vérifier si la date et l'heure sont sélectionnées
+        if (date.getText().equals("Date") || time.getText().equals("Time")) {
+            showToast("Veuillez sélectionner une date et une heure");
+            return;
+        }
+
+        // Construire le message
+        StringBuilder context = new StringBuilder();
+        context.append("Le rendez-vous au ");
+
+        // Vérifier si une localisation est sélectionnée et l'ajouter au message
         if (!listLocations.isEmpty()) {
-            message += context;
-        } else if (geocoder != null) {
+            String address = listLocations.get(listLocations.size() - 1);
+            context.append(address);
+        } else if (geocoder != null) { // Vérifier si la localisation actuelle est disponible
             String locationMessage = "Localisation: " + currentLatLng.latitude + ", " + currentLatLng.longitude;
-            context = "Le rendez-vous au " + locationMessage + " le " + date + " à " + time;
-            message += "\n" + context;
+            context.append(locationMessage);
         } else {
-            Toast.makeText(this, "Aucune localisation disponible", Toast.LENGTH_LONG).show();
+            showToast("Aucune localisation disponible");
             return;
         }
 
-        // Start ValidationRDV to simulate receiving the invitation
-       Intent intent = new Intent(this, ValidationRDV.class);
-        intent.putExtra("latitude", currentLatLng.latitude);
-        intent.putExtra("longitude", currentLatLng.longitude);
-        intent.putExtra("date", "Date et heure du rendez-vous"); // Add your date and time here
-        startActivity(intent);
+        // Ajouter la date et l'heure au message
+        context.append(" le ").append(date.getText()).append(" à ").append(time.getText());
+        message += "\n" + context.toString();
 
+        // Vérifier si l'application a la permission d'envoyer des SMS
         String finalMessage = message;
-        requestPermission(() -> sendSMS(phoneNumber, finalMessage));
+        requestPermission(() -> sendSMS(this, phoneNumber, finalMessage));
+    }
+
+    /**
+     * Afficher un message toast
+     *
+     * @param message Le message à afficher
+     */
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     /**
@@ -259,25 +278,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @param phoneNumber Le numéro de téléphone
      * @param message Le message
      */
-    private void sendSMS(String phoneNumber, String message) {
-
+    public static void sendSMS(Context context, String phoneNumber, String message) {
         SmsManager smsManager = SmsManager.getDefault();
         String[] numbers = phoneNumber.split(";");
         for (String number : numbers) {
             smsManager.sendTextMessage(number, null, message, null, null);
+            ListSmsRDV.addSMSResponse(context, message); // Ajouter le message à la liste des SMS envoyés
         }
-        Toast.makeText(this, "Invitation envoyée", Toast.LENGTH_LONG).show();
+        Toast.makeText(context, "Invitation envoyée", Toast.LENGTH_LONG).show();
         clearFields();
+    }
+
+    /**
+     * Ouvrir la liste des SMS envoyés
+     *
+     * @param view
+     */
+    public void openSMSList(View view) {
+        Intent intent = new Intent(this, ListSmsRDV.class);
+        startActivity(intent);
     }
 
     /**
      * Effacer les champs de texte
      */
-    private void clearFields() {
+    private static void clearFields() {
         editTextMessage.setText("");
         editTextPhoneNumber.setText("");
         editTextLocation.setText("");
-        listLocations.clear();
+
+        // Clear locations list
+        if (!listLocations.isEmpty()) {
+            listLocations.clear();
+            customAdapter.notifyDataSetChanged();
+        }
+
         listViewLocations.clearChoices();
         textViewDetailLocation.setText("");
     }

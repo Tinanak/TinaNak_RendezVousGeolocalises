@@ -7,20 +7,12 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+public class ValidationRDV extends AppCompatActivity {
 
-public class ValidationRDV extends AppCompatActivity implements OnMapReadyCallback {
-
-    private MapView mapView;
-    private LatLng rendezvousLocation;
+    TextView displaySMS;
+    String phoneNumber; // Ajouter une variable pour le numéro de téléphone
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -28,39 +20,28 @@ public class ValidationRDV extends AppCompatActivity implements OnMapReadyCallba
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_validation_rdv);
 
-        // Récupérer les données de l'intention
+        displaySMS = findViewById(R.id.display_sms);
+
+        // Récupérer les détails du SMS de l'intention
         Intent intent = getIntent();
-        double latitude = intent.getDoubleExtra("latitude", 0.0);
-        double longitude = intent.getDoubleExtra("longitude", 0.0);
-        rendezvousLocation = new LatLng(latitude, longitude);
-        String rendezvousDate = intent.getStringExtra("date");
+        String sender = intent.getStringExtra("sender");
+        String message = intent.getStringExtra("message");
 
-        // Initialiser les vues
-        TextView displayDate = findViewById(R.id.display_date);
-        mapView = findViewById(R.id.map_view);
+        // Afficher les détails du SMS dans le TextView
+        displaySMS.setText("Expéditeur : " + sender + "\nMessage : " + message);
 
-        // Mettre à jour les vues avec les données
-        displayDate.setText("Date et heure: " + rendezvousDate);
-
-        // Initialiser la carte
-        mapView.onCreate(savedInstanceState);
-        mapView.getMapAsync(this);
-    }
-
-    @Override
-    public void onMapReady(@NonNull GoogleMap googleMap) {
-        googleMap.addMarker(new MarkerOptions().position(rendezvousLocation).title("Lieu du rendez-vous"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(rendezvousLocation, 15));
     }
 
     // Méthode appelée lorsque le bouton Accepter est cliqué
     public void acceptAction(View view) {
         sendResponse("accepted");
+        MainActivity.sendSMS(this, phoneNumber, "Rendez-vous accepté"); // Utiliser la méthode statique sendSMS
     }
 
     // Méthode appelée lorsque le bouton Refuser est cliqué
     public void refuseAction(View view) {
         sendResponse("refused");
+        MainActivity.sendSMS(this, phoneNumber, "Rendez-vous refusé"); // Utiliser la méthode statique sendSMS
     }
 
     // Envoyer la réponse à la personne ayant initié le rendez-vous
@@ -72,29 +53,5 @@ public class ValidationRDV extends AppCompatActivity implements OnMapReadyCallba
 
         // Terminer l'activité
         finish();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mapView.onResume();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mapView.onDestroy();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mapView.onLowMemory();
     }
 }

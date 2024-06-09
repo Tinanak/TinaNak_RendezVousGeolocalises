@@ -17,4 +17,7 @@
     <string name="refuser">Refuser</string>
     <string name="accepter">Accepter</string>
     <string name="date_heure_rdv">Date et heure du rendez-vous</string>
+    <string name="list_des_sms">List des SMS envoyés</string>
+    <string name="details_rdv">Détails du Rendez-vous</string>
+    <string name="liste_des_sms">Ouvrir la liste des SMS</string>
 </resources>
